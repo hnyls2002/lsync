@@ -16,9 +16,9 @@ app = typer.Typer()
 LSYNC_DIR = get_lsync_dir()
 
 # TODO: move this into config file
-SYNC_DIRS = ["common_sync", "sglang", "docker_workspace"]
+TOP_DIRS = ["common_sync"]
 DEFAULT_CONFIG = f"{LSYNC_DIR}/lsync_config.yaml"
-RSYNCIGNORE = f"{LSYNC_DIR}/.rsyncignore"
+RSYNCIGNORE = f"{LSYNC_DIR}/.lsyncignore"
 
 
 def _sync_command(
@@ -121,10 +121,10 @@ class SyncTool:
     def find_ancestor_to_sync(self) -> Path:
         d = Path.cwd()
         while d.as_posix() != "/":
-            if d.name in SYNC_DIRS:
+            if d.name in TOP_DIRS:
                 return d
             d = d.parent
-        raise typer.Exit(f"No ancestor directory in {SYNC_DIRS} found in {Path.cwd()}")
+        raise typer.Exit(f"No ancestor directory in {TOP_DIRS} found in {Path.cwd()}")
 
     def _probe_gitignore(self) -> Optional[str]:
         gitignore_file = self.local_dir / ".gitignore"
