@@ -5,3 +5,5 @@ third-party/
 __pycache__/
 build/
 *.egg-info/
+
+tmp_*
