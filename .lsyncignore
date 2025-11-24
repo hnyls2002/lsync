@@ -9,5 +9,5 @@ dist/
 
 tmp_*
 
-// sgl-router rust build artifacts
-sgl-router/target/
+// rust build artifacts
+target/
