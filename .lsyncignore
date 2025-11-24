@@ -8,3 +8,6 @@ dist/
 *.egg-info/
 
 tmp_*
+
+// sgl-router rust build artifacts
+sgl-router/target/
