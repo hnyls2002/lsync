@@ -14,14 +14,12 @@ class LogItem:
         now_str: str,
         path: str,
         hosts: str,
-        back: bool,
         delete: bool,
         git_repo: bool,
     ):
         self.now_str = now_str
         self.path = path
         self.hosts = hosts
-        self.back = back
         self.delete = delete
         self.git_repo = git_repo
 
@@ -33,9 +31,9 @@ class LogItem:
         return LogItem(**json.loads(json_str))
 
     def print(self):
-        src = self.hosts if self.back else self.path
-        dst = self.hosts if not self.back else self.path
-        log_str = blue_block(f"last syncing: {self.now_str}: {src} -> {dst}")
+        log_str = blue_block(
+            f"last syncing: {self.now_str}: {self.path} -> {self.hosts}"
+        )
         print(f"last syncing: {log_str}")
 
     def pretty_verbose(self):
@@ -62,12 +60,11 @@ class Logger:
         self,
         path: Union[str, Path],
         hosts: str,
-        back: bool,
         delete: bool,
         git_repo: bool,
     ):
         path = path.as_posix() if isinstance(path, Path) else path
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        log_item = LogItem(now_str, path, hosts, back, delete, git_repo)
+        log_item = LogItem(now_str, path, hosts, delete, git_repo)
         with self.log_file.open("a", encoding="utf-8") as f:
             f.write(log_item.to_json() + "\n")

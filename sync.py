@@ -25,14 +25,10 @@ def _sync_command(
     remote_dir: str,
     local_dir: str,
     delete: bool = False,
-    back: bool = False,
     git_repo: bool = False,
     git_ignore: Optional[str] = None,
 ):
-    if not back:
-        src_dir, dst_dir = local_dir, remote_dir
-    else:
-        src_dir, dst_dir = remote_dir, local_dir
+    src_dir, dst_dir = local_dir, remote_dir
 
     rsync_cmd = [
         "rsync",
@@ -40,7 +36,7 @@ def _sync_command(
         "--delete" if delete else "",
         "--info=progress2",
         f"--exclude-from={git_ignore}" if git_ignore else "",
-        f"--exclude-from={RSYNCIGNORE}" if not back else "",
+        f"--exclude-from={RSYNCIGNORE}",
         "--exclude=.git" if not git_repo else "",
         src_dir,
         dst_dir,
@@ -57,9 +53,7 @@ class SyncTool:
         self,
         server_config: dict,
         file_or_path: Optional[str],
-        master: Optional[str],
         delete: bool,
-        back: bool,
         git_repo: bool,
     ):
         self.server_config = server_config
@@ -75,9 +69,7 @@ class SyncTool:
             self.remote_dir = Path(self.server_config["base_dir"]) / relative_path
 
         # arguments
-        self.master = master
         self.delete = delete
-        self.back = back
         self.git_repo = git_repo
         self.git_ignore = self._probe_gitignore()
 
@@ -93,16 +85,9 @@ class SyncTool:
                 f"{yellow_block('#'*28)}"
             )
 
-        if self.back:
-            typer.echo(
-                f"{red_block('#'*28)}\n"
-                f"{red_block('# Back option is enabled #')}\n"
-                f"{red_block('#'*28)}"
-            )
-
         logger.print_last_log()
 
-        src, dst = ("macbook", self.hosts) if not self.back else (self.hosts, "macbook")
+        src, dst = ("macbook", self.hosts)
         relative_path = self.local_dir.relative_to(self.ancestor_to_sync.parent)
         typer.echo(
             f"Syncing folder {blue_block(relative_path)} from "
@@ -112,11 +97,6 @@ class SyncTool:
     def __post_init__(self):
         if not isinstance(self.hosts, list):
             self.hosts = [self.hosts]
-
-        if len(self.hosts) > 1 and self.back:
-            if self.master is None:
-                raise typer.Exit(f"master must be set when syncing back")
-            self.hosts = [h for h in self.hosts if h == self.master]
 
     def find_ancestor_to_sync(self) -> Path:
         d = Path.cwd()
@@ -147,7 +127,6 @@ class SyncTool:
                     f"{host}:{self.remote_dir.as_posix()}{is_folder}",
                     f"{self.local_dir.as_posix()}{is_folder}",
                     self.delete,
-                    self.back,
                     self.git_repo,
                     self._probe_gitignore(),
                 )
@@ -159,7 +138,6 @@ class SyncTool:
         typer.echo(
             f"Syncing local folder {blue_block(relative_path)} with remote hosts {blue_block(self.hosts)}"
             f"\n(delete={self.delete})"
-            f"\n(back={self.back})"
             f"\n(git_repo={self.git_repo})"
             f"\n===================================================================="
         )
@@ -176,7 +154,6 @@ class SyncTool:
         logger.log_one(
             path=self.local_dir.relative_to(self.ancestor_to_sync.parent),
             hosts=self.hosts,
-            back=self.back,
             delete=self.delete,
             git_repo=self.git_repo,
         )
@@ -188,9 +165,7 @@ class SyncTool:
 def sync(
     server: str = typer.Option(..., "--server", "-n"),
     file_or_path: Optional[str] = typer.Option(None, "--file-or-path", "-f"),
-    master: Optional[str] = typer.Option(None, "--master", "-m"),
     delete: bool = typer.Option(False, "--delete", "-d"),
-    back: bool = typer.Option(False, "--back", help="sync from remote to local"),
     git_repo: bool = typer.Option(False, "--git", "-g", help="sync git repo"),
     config: str = typer.Option(DEFAULT_CONFIG, "--config"),
 ):
@@ -204,9 +179,7 @@ def sync(
     sync_tool = SyncTool(
         config_dict[server],
         file_or_path=file_or_path,
-        master=master,
         delete=delete,
-        back=back,
         git_repo=git_repo,
     )
 

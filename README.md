@@ -13,4 +13,3 @@ TODO:
 - [ ] support viewing logs from remote servers (for completely ignoring .git folders)
 - [ ] support viewing size to sync (--dry-run)
 - [ ] support viewing total size excluding ignored files
-- [ ] better syncing files back mechanism
