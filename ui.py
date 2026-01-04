@@ -55,7 +55,7 @@ class CursorTool:
 
     @staticmethod
     def clear_screen():
-        print("\x1b[2J\x1b[H", end="", flush=True)
+        print("\x1b[2J\x1b[H", end="\n", flush=True)
 
 
 class UITool:
