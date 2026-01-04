@@ -1,3 +1,4 @@
+import os
 import subprocess
 from pathlib import Path
 from typing import Optional
@@ -6,7 +7,7 @@ import typer
 import yaml
 
 from sync_log import Logger
-from ui import CursorTool, UITool, blue_block, yellow_block
+from ui import CursorTool, UITool, blue_block, red_block, yellow_block
 from utils import get_lsync_dir, popen_with_error_check
 
 logger = Logger()
@@ -19,9 +20,15 @@ LSYNC_DIR = get_lsync_dir()
 TOP_DIRS = ["common_sync"]
 DEFAULT_CONFIG = f"{LSYNC_DIR}/lsync_config.yaml"
 RSYNCIGNORE = f"{LSYNC_DIR}/.lsyncignore"
+NDA_DIRS = (
+    os.environ.get("LSYNC_NDA_DIRS", "").split(",")
+    if os.environ.get("LSYNC_NDA_DIRS")
+    else []
+)
 
 
 def _sync_command(
+    server: str,
     remote_dir: str,
     local_dir: str,
     delete: bool = False,
@@ -38,9 +45,14 @@ def _sync_command(
         f"--exclude-from={git_ignore}" if git_ignore else "",
         f"--exclude-from={RSYNCIGNORE}",
         "--exclude=.git" if not git_repo else "",
-        src_dir,
-        dst_dir,
     ]
+    if NDA_DIRS and not server.endswith("-nda"):
+        for nda_dir in NDA_DIRS:
+            rsync_cmd.append(f"--exclude={nda_dir}/")
+    else:
+        print(red_block(f'Including NDA directories "{", ".join(NDA_DIRS)}"'))
+
+    rsync_cmd += [src_dir, dst_dir]
     # remove empty strings
     rsync_cmd = [cmd for cmd in rsync_cmd if cmd]
     typer.echo(f"Executing: \x1b[42m{' '.join(rsync_cmd)}\x1b[0m")
@@ -51,11 +63,13 @@ def _sync_command(
 class SyncTool:
     def __init__(
         self,
+        server: str,
         server_config: dict,
         file_or_path: Optional[str],
         delete: bool,
         git_repo: bool,
     ):
+        self.server = server
         self.server_config = server_config
         self.hosts = self.server_config["hosts"]
         self.ancestor_to_sync = self.find_ancestor_to_sync()
@@ -124,6 +138,7 @@ class SyncTool:
             is_folder = "/" if self.local_dir.is_dir() else ""
             rsync_cmds.append(
                 _sync_command(
+                    self.server,
                     f"{host}:{self.remote_dir.as_posix()}{is_folder}",
                     f"{self.local_dir.as_posix()}{is_folder}",
                     self.delete,
@@ -177,6 +192,7 @@ def sync(
         raise typer.Exit(f"Invalid server(cluster) name: {server}")
 
     sync_tool = SyncTool(
+        server,
         config_dict[server],
         file_or_path=file_or_path,
         delete=delete,
