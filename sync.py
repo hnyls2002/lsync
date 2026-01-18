@@ -15,7 +15,7 @@ logger = Logger()
 app = typer.Typer()
 
 LSYNC_DIR = get_lsync_dir()
-WHILE_LISTED_DIRS = ["scripts", "sglang"]
+WHITE_LISTED_DIRS = ["scripts", "sglang"]
 
 # TODO: move this into config file
 TOP_DIRS = ["common_sync"]
@@ -38,7 +38,7 @@ def _sync_command(
 ):
     src_dir, dst_dir = Path(local_dir), Path(remote_dir)
 
-    src_dirs = [src_dir / d for d in WHILE_LISTED_DIRS if (src_dir / d).exists()]
+    src_dirs = [src_dir / d for d in WHITE_LISTED_DIRS if (src_dir / d).exists()]
 
     # Only include NDA directories for NDA servers
     if server.endswith("-nda"):
