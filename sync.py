@@ -56,8 +56,8 @@ def _sync_command(
         "--exclude=.git" if not git_repo else "",
     ]
 
-    src_dirs_str = [d.as_posix() + ("/" if d.is_dir() else "") for d in src_dirs]
-    dst_dir_str = dst_dir.as_posix()
+    src_dirs_str = [f"{d.as_posix().rstrip('/')}" for d in src_dirs]
+    dst_dir_str = f"{dst_dir.as_posix().rstrip('/')}"
     rsync_cmd.extend(src_dirs_str)
     rsync_cmd.append(dst_dir_str)
 
