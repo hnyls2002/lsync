@@ -15,6 +15,7 @@ logger = Logger()
 app = typer.Typer()
 
 LSYNC_DIR = get_lsync_dir()
+WHILE_LISTED_DIRS = ["scripts", "sglang"]
 
 # TODO: move this into config file
 TOP_DIRS = ["common_sync"]
@@ -35,7 +36,15 @@ def _sync_command(
     git_repo: bool = False,
     git_ignore: Optional[str] = None,
 ):
-    src_dir, dst_dir = local_dir, remote_dir
+    src_dir, dst_dir = Path(local_dir), Path(remote_dir)
+
+    src_dirs = [src_dir / d for d in WHILE_LISTED_DIRS if (src_dir / d).exists()]
+
+    # Only include NDA directories for NDA servers
+    if server.endswith("-nda"):
+        nda_dirs = [src_dir / d for d in NDA_DIRS if (src_dir / d).exists()]
+        src_dirs += nda_dirs
+        print(red_block(f'Including NDA directories "{", ".join(NDA_DIRS)}"'))
 
     rsync_cmd = [
         "rsync",
@@ -46,13 +55,12 @@ def _sync_command(
         f"--exclude-from={RSYNCIGNORE}",
         "--exclude=.git" if not git_repo else "",
     ]
-    if NDA_DIRS and not server.endswith("-nda"):
-        for nda_dir in NDA_DIRS:
-            rsync_cmd.append(f"--exclude={nda_dir}/")
-    else:
-        print(red_block(f'Including NDA directories "{", ".join(NDA_DIRS)}"'))
 
-    rsync_cmd += [src_dir, dst_dir]
+    src_dirs_str = [d.as_posix() + ("/" if d.is_dir() else "") for d in src_dirs]
+    dst_dir_str = dst_dir.as_posix()
+    rsync_cmd.extend(src_dirs_str)
+    rsync_cmd.append(dst_dir_str)
+
     # remove empty strings
     rsync_cmd = [cmd for cmd in rsync_cmd if cmd]
     typer.echo(f"Executing: \x1b[42m{' '.join(rsync_cmd)}\x1b[0m")
