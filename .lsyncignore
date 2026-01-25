@@ -6,9 +6,10 @@ __pycache__/
 build/
 dist/
 *.egg-info/
-.pytest_cache/
-
-tmp_*
 
 // rust build artifacts
 target/
+
+// temp/cache files
+.*cache/
+tmp_*
